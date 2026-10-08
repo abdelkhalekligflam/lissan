@@ -1,0 +1,7 @@
+project_id = "lissan"
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+[functions.pronunciation]
+verify_jwt = false
+# getUser() verifies the JWT inside the handler (supports asymmetric signing keys).
