@@ -922,9 +922,6 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                   ],
                   [
                     Layers,
-                    Languages,
-                    Link2,
-                    Brain,
                     t(
                       "كلمات كتبقى معاك",
                       "Words that stay with you",
@@ -1471,9 +1468,6 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                     [
                       "flashcards",
                       Layers,
-                      Languages,
-                      Link2,
-                      Brain,
                       t("بطاقات الكلمات", "Flashcards", "Cartes mémoire"),
                     ],
                     [
