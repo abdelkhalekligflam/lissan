@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 25070)
-Total output lines: 2666
-
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -1377,7 +1374,15 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                       </small>
                       <h3 dir="ltr">{lang.hello}</h3>
                       <p>{lang.translation}</p>
-              …70 tokens truncated…      </div>
+                    </div>
+                    <button
+                      className="icon-btn"
+                      onClick={() => speak(lang.hello)}
+                      aria-label="Listen"
+                    >
+                      <Volume2 />
+                    </button>
+                  </div>
                 </article>
               </div>
               <aside className="dashboard-aside">
