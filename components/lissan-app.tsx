@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 25070)
+Total output lines: 2666
+
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -14,6 +17,9 @@ import {
   Heart,
   Home,
   Layers,
+  Languages,
+  Link2,
+  Brain,
   Lock,
   LogOut,
   Mic,
@@ -430,10 +436,26 @@ export default function LissanApp({ configured }: { configured: boolean }) {
       <Arrow size={18} />
     </button>
   );
+  const workspace = [
+    "home",
+    "flashcards",
+    "games",
+    "matching",
+    "speed",
+    "memory",
+    "pronunciation",
+    "listening",
+    "profile",
+  ].includes(view);
+  const activeNav: View = ["matching", "speed", "memory"].includes(view)
+    ? "games"
+    : view === "listening"
+      ? "pronunciation"
+      : view;
   const authEntry = () => (configured ? setAuth(true) : navigate("onboarding"));
   return (
     <div
-      className="app-root"
+      className={`app-root ${workspace ? "workspace" : ""}`}
       style={{ "--language": lang.color } as CSSProperties}
     >
       <header className="header">
@@ -443,7 +465,9 @@ export default function LissanApp({ configured }: { configured: boolean }) {
             onClick={() => navigate(signed ? "home" : "landing")}
             aria-label="Lissan"
           >
-            <span className="brand-mark">ل</span>
+            <span className="brand-mark">
+              <Languages size={22} strokeWidth={1.8} />
+            </span>
             <span>
               <b>{t("لسان", "Lissan", "Lissan")}</b>
               <small>
@@ -477,7 +501,7 @@ export default function LissanApp({ configured }: { configured: boolean }) {
               navItems.map(([v, label, Icon]) => (
                 <button
                   key={v}
-                  className={view === v ? "active" : ""}
+                  className={activeNav === v ? "active" : ""}
                   onClick={() => navigate(v)}
                 >
                   <Icon size={16} />
@@ -537,82 +561,158 @@ export default function LissanApp({ configured }: { configured: boolean }) {
           )}
         </div>
       )}
+      {workspace && (
+        <aside
+          className="workspace-sidebar"
+          aria-label={t(
+            "مساحة التعلم",
+            "Learning workspace",
+            "Espace d’apprentissage",
+          )}
+        >
+          <div className="sidebar-heading">
+            <span className="sidebar-status" />
+            {t("مساحة التعلم", "Your workspace", "Votre espace")}
+          </div>
+          <nav className="sidebar-nav">
+            {navItems.map(([v, label, Icon]) => (
+              <button
+                key={v}
+                className={activeNav === v ? "active" : ""}
+                aria-current={activeNav === v ? "page" : undefined}
+                onClick={() => navigate(v)}
+              >
+                <Icon size={18} strokeWidth={1.7} />
+                <span>{label}</span>
+                {activeNav === v && <span className="nav-indicator" />}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-heading secondary-heading">
+            {t("حسابك", "Personal", "Personnel")}
+          </div>
+          <nav className="sidebar-nav">
+            <button
+              className={view === "profile" ? "active" : ""}
+              aria-current={view === "profile" ? "page" : undefined}
+              onClick={() => navigate("profile")}
+            >
+              <Settings size={18} strokeWidth={1.7} />
+              {t(
+                "الملف والإعدادات",
+                "Profile & settings",
+                "Profil et réglages",
+              )}
+            </button>
+            <button onClick={() => navigate("pricing")}>
+              <Sparkles size={18} strokeWidth={1.7} />
+              {t("Lissan Premium", "Lissan Premium", "Lissan Premium")}
+              <span className="sidebar-soon">
+                {t("قريباً", "Soon", "Bientôt")}
+              </span>
+            </button>
+          </nav>
+          <div className="sidebar-bottom">
+            <span className="sidebar-language">
+              {lang.flag}
+              <b>{t(lang.name, lang.en, lang.fr)}</b>
+              <span>A1</span>
+            </span>
+            <p>
+              {t(
+                "خطوة صغيرة كل يوم.",
+                "A little progress, every day.",
+                "Un petit pas, chaque jour.",
+              )}
+            </p>
+            <div className="progress">
+              <i
+                style={{
+                  width: `${Math.round((completed.length / 3) * 100)}%`,
+                }}
+              />
+            </div>
+            <small>
+              {completed.length} / 3{" "}
+              {t("دروس مكتملة", "lessons completed", "leçons terminées")}
+            </small>
+          </div>
+        </aside>
+      )}
       <main>
         {view === "landing" && (
           <>
             <section className="hero">
-              <div className="eyebrow">
-                <span className="live-dot" />
-                {t(
-                  "لغات جديدة. فرص جديدة. أنت أقرب مما تتخيل.",
-                  "New languages. New possibilities. Your next chapter.",
-                  "De nouvelles langues. De nouvelles possibilités.",
-                )}
-              </div>
-              <h1>
-                {t(
-                  "تعلم الإسبانية والإنجليزية والفرنسية",
-                  "Learn Spanish, English and French",
-                  "Apprenez l’espagnol, l’anglais et le français",
-                )}
-                <br />
-                <span className="gradient-text">
+              <div className="hero-copy">
+                <div className="eyebrow">
+                  <span className="live-dot" />
                   {t(
-                    "بطريقة ممتعة وذكية",
-                    "the fun and smart way",
-                    "de façon ludique et intelligente",
+                    "ثلاث لغات. عالم من الإمكانيات.",
+                    "Three languages. A world of possibilities.",
+                    "Trois langues. Un monde de possibilités.",
                   )}
-                </span>
-              </h1>
-              <p>
-                {t(
-                  "تعلم الإسبانية والإنجليزية والفرنسية بطريقة ممتعة وذكية. دروس قصيرة، تدريب حقيقي، وتقدم كتشوفو كل نهار.",
-                  "Learn Spanish, English and French with short lessons, real practice and progress you can see every day.",
-                  "Apprenez l’espagnol, l’anglais et le français avec des leçons courtes et une progression visible chaque jour.",
-                )}
-              </p>
-              <div className="hero-actions">
-                {primary(
-                  t(
-                    "ابدأ التعلم مجاناً",
-                    "Start learning for free",
-                    "Commencer gratuitement",
-                  ),
-                  authEntry,
-                )}
-                <button
-                  className="btn secondary"
-                  onClick={() => navigate("onboarding")}
-                >
-                  <Play size={17} />
-                  {t("جرب درساً", "Try a lesson", "Essayer une leçon")}
-                </button>
-              </div>
-              <div className="hero-proof">
-                <span>
-                  <Check size={15} />
+                </div>
+                <h1>
+                  {t("كل كلمة،", "Every word,", "Chaque mot,")}
+                  <br />
+                  <span className="gradient-text">
+                    {t(
+                      "بداية جديدة.",
+                      "a new beginning.",
+                      "un nouveau départ.",
+                    )}
+                  </span>
+                </h1>
+                <p>
                   {t(
-                    "بالعربية والدارجة",
-                    "Made for Arabic speakers",
-                    "Pour les arabophones",
+                    "تعلم الإسبانية والإنجليزية والفرنسية بطريقة ممتعة وذكية. دروس قصيرة، تدريب حقيقي، وتقدم كتشوفو كل نهار.",
+                    "Learn Spanish, English and French with short lessons, real practice and progress you can see every day.",
+                    "Apprenez l’espagnol, l’anglais et le français avec des leçons courtes et une progression visible chaque jour.",
                   )}
-                </span>
-                <span>
-                  <Check size={15} />
-                  {t(
-                    "5 دقائق للبداية",
-                    "Start with 5 minutes",
-                    "Commencez en 5 minutes",
+                </p>
+                <div className="hero-actions">
+                  {primary(
+                    t(
+                      "ابدأ التعلم مجاناً",
+                      "Start learning for free",
+                      "Commencer gratuitement",
+                    ),
+                    authEntry,
                   )}
-                </span>
-                <span>
-                  <Check size={15} />
-                  {t(
-                    "بلا بطاقة بنكية",
-                    "No credit card",
-                    "Sans carte bancaire",
-                  )}
-                </span>
+                  <button
+                    className="btn secondary"
+                    onClick={() => navigate("onboarding")}
+                  >
+                    <Play size={17} />
+                    {t("جرب درساً", "Try a lesson", "Essayer une leçon")}
+                  </button>
+                </div>
+                <div className="hero-proof">
+                  <span>
+                    <Check size={15} />
+                    {t(
+                      "بالعربية والدارجة",
+                      "Made for Arabic speakers",
+                      "Pour les arabophones",
+                    )}
+                  </span>
+                  <span>
+                    <Check size={15} />
+                    {t(
+                      "5 دقائق للبداية",
+                      "Start with 5 minutes",
+                      "Commencez en 5 minutes",
+                    )}
+                  </span>
+                  <span>
+                    <Check size={15} />
+                    {t(
+                      "بلا بطاقة بنكية",
+                      "No credit card",
+                      "Sans carte bancaire",
+                    )}
+                  </span>
+                </div>
               </div>
               <div className="hero-preview">
                 <div className="preview-head">
@@ -636,7 +736,9 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                     <span className="chip orange">
                       {t("درس اليوم", "Today’s lesson", "La leçon du jour")}
                     </span>
-                    <div className="preview-emoji">👋</div>
+                    <div className="preview-emoji">
+                      <Languages size={36} strokeWidth={1.4} />
+                    </div>
                     <h2 dir="ltr">Hola, ¿cómo estás?</h2>
                     <p>
                       {t(
@@ -823,6 +925,9 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                   ],
                   [
                     Layers,
+                    Languages,
+                    Link2,
+                    Brain,
                     t(
                       "كلمات كتبقى معاك",
                       "Words that stay with you",
@@ -1211,10 +1316,16 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                           className={`map-unit ${locked ? "dimmed" : ""}`}
                           key={i}
                         >
-                          <span className="unit-label">
-                            {unit.icon} {t("الوحدة", "Unit", "Unité")} {i + 1}:{" "}
-                            {unitTitle(i)}
+                          <span className="unit-number">
+                            {String(i + 1).padStart(2, "0")}
                           </span>
+                          <div className="unit-copy">
+                            <small>
+                              {t("الوحدة", "Unit", "Unité")} {i + 1} · 4{" "}
+                              {t("عبارات", "phrases", "expressions")}
+                            </small>
+                            <span className="unit-label">{unitTitle(i)}</span>
+                          </div>
                           <button
                             className={`node ${done ? "complete" : locked ? "locked" : "current"}`}
                             disabled={locked}
@@ -1253,7 +1364,9 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                     })}
                   </div>
                   <div className="daily-phrase">
-                    <span className="big-emoji">💬</span>
+                    <span className="phrase-icon">
+                      <Volume2 size={22} strokeWidth={1.6} />
+                    </span>
                     <div>
                       <small className="cyan">
                         {t(
@@ -1264,15 +1377,7 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                       </small>
                       <h3 dir="ltr">{lang.hello}</h3>
                       <p>{lang.translation}</p>
-                    </div>
-                    <button
-                      className="icon-btn"
-                      onClick={() => speak(lang.hello)}
-                      aria-label="Listen"
-                    >
-                      <Volume2 />
-                    </button>
-                  </div>
+              …70 tokens truncated…      </div>
                 </article>
               </div>
               <aside className="dashboard-aside">
@@ -1361,6 +1466,9 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                     [
                       "flashcards",
                       Layers,
+                      Languages,
+                      Link2,
+                      Brain,
                       t("بطاقات الكلمات", "Flashcards", "Cartes mémoire"),
                     ],
                     [
@@ -2015,13 +2123,21 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                     "Retournez les cartes et trouvez les paires",
                   ),
                 ],
-              ].map(([v, emoji, title, desc]) => (
+              ].map(([v, , title, desc]) => (
                 <button
                   key={v}
                   className="game-card panel"
                   onClick={() => navigate(v as View)}
                 >
-                  <span className="game-emoji">{emoji}</span>
+                  <span className="game-emoji">
+                    {v === "matching" ? (
+                      <Link2 size={28} strokeWidth={1.5} />
+                    ) : v === "speed" ? (
+                      <Zap size={28} strokeWidth={1.5} />
+                    ) : (
+                      <Brain size={28} strokeWidth={1.5} />
+                    )}
+                  </span>
                   <span className="chip violet">
                     {t("تدريب", "PRACTICE", "EXERCICE")}
                   </span>
@@ -2482,7 +2598,9 @@ export default function LissanApp({ configured }: { configured: boolean }) {
       </main>
       <footer>
         <button className="brand" onClick={() => navigate("landing")}>
-          <span className="brand-mark small">ل</span>
+          <span className="brand-mark small">
+            <Languages size={18} strokeWidth={1.8} />
+          </span>
           <b>Lissan</b>
         </button>
         <p>
@@ -2506,7 +2624,7 @@ export default function LissanApp({ configured }: { configured: boolean }) {
             return (
               <button
                 key={v as string}
-                className={view === v ? "active" : ""}
+                className={activeNav === v ? "active" : ""}
                 onClick={() => navigate(v as View)}
               >
                 <Icon size={21} />
