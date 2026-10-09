@@ -62,7 +62,12 @@ export async function POST(req: NextRequest) {
       if (error) return genericError();
       return NextResponse.json({ ok: true });
     }
-    if (!data.captchaToken || !(await verifyCaptcha(data.captchaToken, req)))
+    // Turnstile tokens are single-use. Supabase validates email-auth tokens;
+    // only OAuth initiation needs our own verification.
+    if (
+      !data.captchaToken ||
+      (data.action === "google" && !(await verifyCaptcha(data.captchaToken, req)))
+    )
       return NextResponse.json(
         { error: "تحقق من CAPTCHA وحاول مرة أخرى." },
         { status: 400 },
