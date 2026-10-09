@@ -463,7 +463,7 @@ export default function LissanApp({ configured }: { configured: boolean }) {
             aria-label="Lissan"
           >
             <span className="brand-mark">
-              <Languages size={22} strokeWidth={1.8} />
+              <img src="/icon.svg" alt="" width={40} height={40} />
             </span>
             <span>
               <b>{t("لسان", "Lissan", "Lissan")}</b>
@@ -2598,7 +2598,7 @@ export default function LissanApp({ configured }: { configured: boolean }) {
       <footer>
         <button className="brand" onClick={() => navigate("landing")}>
           <span className="brand-mark small">
-            <Languages size={18} strokeWidth={1.8} />
+            <img src="/icon.svg" alt="" width={32} height={32} />
           </span>
           <b>Lissan</b>
         </button>
