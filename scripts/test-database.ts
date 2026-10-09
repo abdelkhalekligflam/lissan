@@ -25,7 +25,7 @@ async function main() {
         "select count(*)::int n from public.lessons",
       )
     ).rows[0].n,
-    9,
+    18,
   );
   const rls = await db.query<{ relname: string; relrowsecurity: boolean }>(
     "select relname,relrowsecurity from pg_class c join pg_namespace n on c.relnamespace=n.oid where n.nspname='public' and c.relkind='r'",
@@ -126,6 +126,89 @@ async function main() {
     (await db.query("select * from public.streaks")).rows.length,
     0,
     "B cannot read A's streaks",
+  );
+  await db.exec("reset role;set role service_role;");
+  await assert.rejects(
+    () => db.query("select public.award_lesson($1,'es-4',100,40)", [b]),
+    /Pro required/,
+  );
+  await assert.rejects(
+    () => db.query("select public.review_card($1,'es-3-0',true)", [b]),
+    /Pro required/,
+  );
+  await db.query(
+    "insert into public.subscriptions(user_id,plan,status) values($1,'pro','active')",
+    [a],
+  );
+  await db.exec(
+    `reset role;set role authenticated;set request.jwt.claim.sub='${a}';`,
+  );
+  assert.equal(
+    (await db.query("select * from public.lessons")).rows.length,
+    18,
+    "Pro reads all lessons",
+  );
+  assert.equal(
+    (await db.query("select * from public.subscriptions")).rows.length,
+    1,
+  );
+  await assert.rejects(
+    () => db.query("update public.subscriptions set plan='pro'"),
+    /permission denied/,
+  );
+  await db.exec(
+    `reset role;set role authenticated;set request.jwt.claim.sub='${b}';`,
+  );
+  assert.equal(
+    (await db.query("select * from public.lessons")).rows.length,
+    9,
+    "Free cannot read paid content",
+  );
+  assert.equal(
+    (await db.query("select * from public.flashcards")).rows.length,
+    36,
+    "Free cannot read paid cards",
+  );
+  assert.equal(
+    (await db.query("select * from public.subscriptions")).rows.length,
+    0,
+    "Free cannot read Pro owner's subscription",
+  );
+  await assert.rejects(
+    () =>
+      db.query(
+        "insert into public.subscriptions(user_id,plan,status) values($1,'pro','active')",
+        [b],
+      ),
+    /permission denied/,
+  );
+  await db.exec("reset role;set role service_role;");
+  const proAward = await db.query<{ r: { xp: number } }>(
+    "select public.award_lesson($1,'es-4',100,40) r",
+    [a],
+  );
+  assert.equal(proAward.rows[0].r.xp, 40);
+  const proRepeat = await db.query<{ r: { xp: number } }>(
+    "select public.award_lesson($1,'es-4',100,40) r",
+    [a],
+  );
+  assert.equal(proRepeat.rows[0].r.xp, 0);
+  await db.query("select public.review_card($1,'es-3-0',true)", [a]);
+  await db.query(
+    "update public.subscriptions set expires_at=now()-interval '1 day' where user_id=$1",
+    [a],
+  );
+  await assert.rejects(
+    () => db.query("select public.award_lesson($1,'es-5',100,40)", [a]),
+    /Pro required/,
+  );
+  await db.exec(
+    `reset role;set role authenticated;set request.jwt.claim.sub='${a}';`,
+  );
+  assert.equal(
+    (await db.query("select * from public.lessons")).rows.length,
+    9,
+    "Expired Pro loses access",
   );
   await db.exec("reset role;");
   await db.query(

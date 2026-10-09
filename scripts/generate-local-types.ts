@@ -65,7 +65,7 @@ async function main() {
   for (const [name, cols] of tables)
     if (views.has(name)) out += table(name, cols, true);
   out +=
-    "};Functions:{award_lesson:{Args:{p_user_id:string;p_lesson_id:string;p_score:number;p_xp:number};Returns:Json};review_card:{Args:{p_user_id:string;p_card_id:string;p_known:boolean};Returns:Json}};Enums:Record<never,never>;CompositeTypes:Record<never,never>}};\n";
+    "};Functions:{has_pro:{Args:Record<never,never>;Returns:boolean};award_lesson:{Args:{p_user_id:string;p_lesson_id:string;p_score:number;p_xp:number};Returns:Json};review_card:{Args:{p_user_id:string;p_card_id:string;p_known:boolean};Returns:Json}};Enums:Record<never,never>;CompositeTypes:Record<never,never>}};\n";
   writeFileSync("lib/supabase/database.types.ts", out);
   await db.close();
   console.log("Generated database types from validated migration schema.");

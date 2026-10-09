@@ -26,7 +26,7 @@ Without Supabase variables, discovery mode works on this device using local stor
 - Email/password and Google OAuth, email confirmation and password reset.
 - Turnstile, Upstash rate limits, secure cookies, nonce-based CSP, RLS policies.
 - Microphone recording, real waveform and playback, optional browser speech recognition; private audio upload through a verified Edge function.
-- A pricing page that clearly labels Premium as upcoming. No payments are collected.
+- Free + Pro pricing: 49 MAD/month or 399 MAD/year (189 MAD annual saving). Pro includes 9 additional lessons, 36 phrases/cards across Spanish, English and French: interviews, workplace communication, hotel and airport. Quizzes award trusted XP once; listening and spaced repetition save to the account. Paid checkout is not connected; no payments are collected.
 
 ## Important scope
 
@@ -73,3 +73,9 @@ Seed content derives from `lib/learning/content.ts`. The committed database type
 ## Release checks
 
 Run the manual checklist, exercise signup/confirmation/reset/Google login on the deployed domain, verify two-user isolation, check 429 responses, validate microphone permissions on desktop/mobile, and review translations. SQL and build checks alone do not establish production readiness.
+
+## Pro access
+
+Apply `supabase/migrations/20261009202524_pro_learning.sql` after the initial migration. It seeds paid content and adds a read-only `subscriptions` entitlement table. New accounts remain Free; client writes to entitlements are denied. Active Pro access is rechecked server-side and by RLS; canceled/expired access is denied. Administrative grants use the SQL editor or trusted server-side code. Never grant Pro from client input or user metadata.
+
+The pricing UI cannot collect payments yet. TODO (manual): connect a payment provider and verify signed webhooks, amount, currency, product and subscription period before granting/revoking access. The current owner account has a manual Pro grant for testing; it is not a payment.

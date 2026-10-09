@@ -183,6 +183,33 @@ export type Database = {
         Update: { user_id?: string; day?: string; xp?: number };
         Relationships: [];
       };
+      subscriptions: {
+        Row: {
+          user_id: string;
+          plan: string;
+          status: string;
+          expires_at: string | null;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          plan?: string;
+          status?: string;
+          expires_at?: string | null;
+          source?: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          plan?: string;
+          status?: string;
+          expires_at?: string | null;
+          source?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       units: {
         Row: {
           id: string;
@@ -250,6 +277,7 @@ export type Database = {
       };
     };
     Functions: {
+      has_pro: { Args: Record<never, never>; Returns: boolean };
       award_lesson: {
         Args: {
           p_user_id: string;

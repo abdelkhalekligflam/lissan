@@ -9,6 +9,7 @@ import {
   type Language,
 } from "@/lib/learning/content";
 import { genericError, rateLimit, sameOrigin } from "@/lib/security";
+import { proLessons, proExercises } from "@/lib/pro/curriculum";
 const language = z.enum(["es", "en", "fr"]);
 const input = z.discriminatedUnion("action", [
   z
@@ -29,14 +30,14 @@ const input = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("quiz"),
-      lesson_id: z.string().regex(/^(es|en|fr)-[1-3]$/),
+      lesson_id: z.string().regex(/^(es|en|fr)-[1-6]$/),
       answers: z.array(z.string().max(300)).length(4),
     })
     .strict(),
   z
     .object({
       action: z.literal("review"),
-      card_id: z.string().regex(/^(es|en|fr)-[0-2]-[0-3]$/),
+      card_id: z.string().regex(/^(es|en|fr)-[0-5]-[0-3]$/),
       known: z.boolean(),
     })
     .strict(),
@@ -65,6 +66,31 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "سجل الدخول أولاً" }, { status: 401 });
     const limited = await rateLimit("general", user.id);
     if (limited) return limited;
+    const subscription = await client
+      .from("subscriptions")
+      .select("plan,status,expires_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (subscription.error) return genericError();
+    const entitlement = subscription.data;
+    const pro =
+      entitlement?.plan === "pro" &&
+      entitlement.status === "active" &&
+      (!entitlement.expires_at ||
+        Date.parse(entitlement.expires_at) > Date.now());
+    if (req.nextUrl.searchParams.get("pro") === "1") {
+      if (!pro)
+        return NextResponse.json(
+          { error: "هذه الميزة متاحة لحساب Pro", code: "PRO_REQUIRED" },
+          { status: 403 },
+        );
+      return NextResponse.json({
+        lessons: proLessons.map((l) => ({
+          ...l,
+          exercises: proExercises(l.id),
+        })),
+      });
+    }
     if (req.nextUrl.searchParams.get("leaderboard") === "1") {
       const { data, error } = await adminClient()
         .from("weekly_leaderboard")
@@ -90,6 +116,7 @@ export async function GET(req: NextRequest) {
     const [profile, progress, activity, reviews] = queries;
     return NextResponse.json({
       profile: {
+        plan: pro ? "pro" : "free",
         ...profile.data,
         completed: progress.data?.map((r) => r.lesson_id) || [],
         activity: Object.fromEntries(
@@ -138,7 +165,28 @@ export async function POST(req: NextRequest) {
     const admin = adminClient();
     if (data.action === "quiz") {
       const [l, n] = data.lesson_id.split("-");
-      const exercises = getExercises(l as Language, Number(n) - 1);
+      const isPro = Number(n) > 3;
+      if (isPro) {
+        const { data: subscription, error } = await client
+          .from("subscriptions")
+          .select("plan,status,expires_at")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (error) return genericError();
+        if (
+          subscription?.plan !== "pro" ||
+          subscription.status !== "active" ||
+          (subscription.expires_at &&
+            Date.parse(subscription.expires_at) <= Date.now())
+        )
+          return NextResponse.json(
+            { error: "يلزم اشتراك Pro", code: "PRO_REQUIRED" },
+            { status: 403 },
+          );
+      }
+      const exercises = isPro
+        ? proExercises(data.lesson_id)
+        : getExercises(l as Language, Number(n) - 1);
       const correct = exercises.filter(
         (e, i) => normalize(e.answer) === normalize(data.answers[i]),
       ).length;

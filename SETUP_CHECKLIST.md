@@ -20,7 +20,7 @@ TODO (manual): replace all owner-supplied values. Restart `npm run dev` after ch
 
 ## 2. Apply the migration and seed
 
-Recommended: Dashboard → SQL Editor → New query. Execute the entire file `supabase/migrations/20261008205134_initial_lissan.sql`, then execute `supabase/seed.sql`. Run the migration once; the seed is repeatable. The migration creates all 12 tables, profile trigger, protected RPCs, indexes, RLS policies and storage buckets.
+Recommended: Dashboard → SQL Editor → New query. Execute the entire file `supabase/migrations/20261008205134_initial_lissan.sql`, then execute `supabase/migrations/20261009202524_pro_learning.sql`, then execute `supabase/seed.sql`. Run the migration once; the seed is repeatable. The migration creates the initial 12 tables, profile trigger, protected RPCs, indexes, RLS policies and storage buckets.
 
 Alternatively, after reviewing your installed CLI help:
 
@@ -45,7 +45,7 @@ select 'languages' as item, count(*) from public.languages
 union all select 'lessons', count(*) from public.lessons
 union all select 'exercises', count(*) from public.exercises
 union all select 'flashcards', count(*) from public.flashcards;
--- Expected: 3 languages, 9 lessons, 36 exercises, 36 flashcards.
+-- Expected after Pro migration: 3 languages, 18 lessons, 72 exercises, 72 flashcards.
 ```
 
 ## 3. Auth settings, URLs and Google OAuth
@@ -204,7 +204,14 @@ Vercel → Project → Settings → Domains → Add domain, configure the reques
 - Test desktop and phone layouts; AR must be RTL, target phrases LTR, EN/FR LTR.
 - Test microphone allow/deny, record/stop, playback and a private upload.
 - Speech recognition support varies; there is no professional pronunciation score yet.
-- Premium is upcoming; no subscriptions are activated and no payment is taken.
+- Pro learning is available to active Pro entitlements; new users are Free. Paid checkout is not connected and no payment is taken.
 - Current curriculum: 9 A1 lessons. Intermediate/advanced preference is not extra course content.
 - Notifications and offline account sync are not shipped as production features.
 - Review translated lesson content with a language teacher before broad release.
+
+## Pro billing (manual, required before accepting payments)
+
+- Prices: 49 MAD monthly; 399 MAD yearly, saving 189 MAD compared with 12 monthly payments.
+- TODO (manual): select and configure a payment provider. Add server-only secrets to the hosting platform. Implement and verify signed payment webhooks before activating public checkout. Validate price/currency/period on the server, deduplicate webhook events, grant access on confirmed payment and revoke it on expiry/cancellation.
+- Administrative testing grant: in Supabase → SQL Editor, use a verified user UUID in a parameterized administrative query to upsert `subscriptions` with `plan='pro'`, `status='active'`, `source='manual'`. This table is read-only to authenticated browser clients. Do not use `user_metadata` as authorization.
+- Verify with Free and Pro users: paid content/API is denied for Free; Pro has 18 lessons in total and 72 cards. Expired or canceled Pro loses access to paid content.

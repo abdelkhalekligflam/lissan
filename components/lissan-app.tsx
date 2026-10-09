@@ -48,6 +48,9 @@ import { Leaderboard } from "./leaderboard";
 import { Game } from "./practice-games";
 import { Listening } from "./listening";
 
+import { ProStudio } from "./pro-studio";
+import { PRO_PRICE } from "@/lib/pro/plans";
+
 type View =
   | "landing"
   | "onboarding"
@@ -63,8 +66,10 @@ type View =
   | "pronunciation"
   | "listening"
   | "profile"
-  | "pricing";
+  | "pricing"
+  | "pro";
 type Profile = {
+  plan?: "free" | "pro";
   name: string;
   language: Language;
   locale: Locale;
@@ -76,6 +81,7 @@ type Profile = {
   reviews: Record<string, { interval: number; due: string }>;
 };
 const initial: Profile = {
+  plan: "free",
   name: "",
   language: "es",
   locale: "ar",
@@ -93,7 +99,7 @@ const discoverySchema = z.object({
   goal: z.number().refine((n) => [5, 10, 20].includes(n)),
   level: z.enum(["beginner", "intermediate", "advanced"]),
   xp: z.number().int().min(0),
-  completed: z.array(z.string().regex(/^(es|en|fr)-[1-3]$/)).max(9),
+  completed: z.array(z.string().regex(/^(es|en|fr)-[1-6]$/)).max(18),
   activity: z.record(z.string(), z.number().min(0)),
   reviews: z.record(
     z.string(),
@@ -143,7 +149,7 @@ export default function LissanApp({ configured }: { configured: boolean }) {
   const [flipped, setFlipped] = useState(false);
   const [practiceEarly, setPracticeEarly] = useState(false);
   const [reviewed, setReviewed] = useState<string[]>([]);
-  const [yearly, setYearly] = useState(true);
+  const [yearly, setYearly] = useState(false);
   const lang = languages.find((l) => l.id === p.language)!;
   const words = vocabulary[p.language][lesson];
   const exercises = getExercises(p.language, lesson);
@@ -178,6 +184,12 @@ export default function LissanApp({ configured }: { configured: boolean }) {
           ),
       );
     return body;
+  }
+  async function refreshProgress() {
+    const response = await fetch("/api/learning");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "تعذر تحميل التقدم");
+    setP(data.profile);
   }
   async function sync() {
     try {
@@ -229,7 +241,9 @@ export default function LissanApp({ configured }: { configured: boolean }) {
     const timer = setTimeout(() => setNotice(""), 6500);
     return () => clearTimeout(timer);
   }, [notice]);
-  const completed = p.completed.filter((id) => id.startsWith(p.language));
+  const completed = p.completed.filter(
+    (id) => id.startsWith(p.language) && Number(id.split("-")[1]) <= 3,
+  );
   const nextLesson = Math.min(completed.length, 2);
   const startLesson = (i: number) => {
     setLesson(i);
@@ -443,6 +457,7 @@ export default function LissanApp({ configured }: { configured: boolean }) {
     "pronunciation",
     "listening",
     "profile",
+    "pro",
   ].includes(view);
   const activeNav: View = ["matching", "speed", "memory"].includes(view)
     ? "games"
@@ -601,11 +616,13 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                 "Profil et réglages",
               )}
             </button>
-            <button onClick={() => navigate("pricing")}>
+            <button
+              onClick={() => navigate(p.plan === "pro" ? "pro" : "pricing")}
+            >
               <Sparkles size={18} strokeWidth={1.7} />
-              {t("Lissan Premium", "Lissan Premium", "Lissan Premium")}
+              {t("Lissan Pro", "Lissan Pro", "Lissan Pro")}
               <span className="sidebar-soon">
-                {t("قريباً", "Soon", "Bientôt")}
+                {p.plan === "pro" ? "PRO" : "49 DH"}
               </span>
             </button>
           </nav>
@@ -1247,6 +1264,30 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                   ))}
                 </select>
               </label>
+            </div>
+            <div className="panel pro-dashboard-link">
+              <div>
+                <span className="chip violet">Lissan Pro</span>
+                <p>
+                  {t(
+                    "مقابلة العمل، التواصل المهني والسفر",
+                    "Job interviews, workplace & travel",
+                    "Entretiens, travail et voyage",
+                  )}
+                </p>
+              </div>
+              <button
+                className="btn secondary"
+                onClick={() => navigate(p.plan === "pro" ? "pro" : "pricing")}
+              >
+                {p.plan === "pro"
+                  ? t(
+                      "افتح مساحة Pro",
+                      "Open Pro studio",
+                      "Ouvrir l’espace Pro",
+                    )
+                  : t("اكتشف Pro", "Explore Pro", "Découvrir Pro")}
+              </button>
             </div>
             <div className="dashboard-grid">
               <div className="dashboard-main">
@@ -2311,12 +2352,14 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                           <span>
                             {l.flag} {p.locale === "ar" ? l.name : l[p.locale]}
                           </span>
-                          <small>{n} / 3</small>
+                          <small>
+                            {n} / {p.plan === "pro" ? 6 : 3}
+                          </small>
                         </div>
                         <div className="progress">
                           <i
                             style={{
-                              width: `${(n / 3) * 100}%`,
+                              width: `${Math.min(100, (n / (p.plan === "pro" ? 6 : 3)) * 100)}%`,
                               background: l.color,
                             }}
                           />
@@ -2404,11 +2447,8 @@ export default function LissanApp({ configured }: { configured: boolean }) {
                     className="text-btn"
                     onClick={() => navigate("pricing")}
                   >
-                    {t(
-                      "مجاني · شوف الخطط",
-                      "Free · view plans",
-                      "Gratuit · voir les offres",
-                    )}
+                    {p.plan === "pro" ? "Pro · " : "Free · "}
+                    {t("شوف الخطط", "View plans", "Voir les offres")}
                   </button>
                 </div>
                 {signed ? (
@@ -2470,23 +2510,29 @@ export default function LissanApp({ configured }: { configured: boolean }) {
               </h1>
               <p>
                 {t(
-                  "المحتوى الأساسي مفتوح. Premium قيد التحضير.",
-                  "Core learning is free. Premium is in development.",
-                  "L’apprentissage de base est gratuit. Premium est en préparation.",
+                  "ابدأ مجاناً، وطوّر مهاراتك مع مسارات Pro العملية.",
+                  "Start free, then go further with practical Pro paths.",
+                  "Commencez gratuitement, puis progressez avec les parcours Pro.",
                 )}
               </p>
               <div className="billing-toggle">
                 <button
                   className={!yearly ? "active" : ""}
+                  aria-pressed={!yearly}
                   onClick={() => setYearly(false)}
                 >
                   {t("شهري", "Monthly", "Mensuel")}
                 </button>
                 <button
                   className={yearly ? "active" : ""}
+                  aria-pressed={yearly}
                   onClick={() => setYearly(true)}
                 >
-                  {t("سنوي", "Yearly", "Annuel")}
+                  {t(
+                    "سنوي · وفر 189 درهم",
+                    "Yearly · save 189 DH",
+                    "Annuel · économisez 189 DH",
+                  )}
                 </button>
               </div>
             </div>
@@ -2542,57 +2588,107 @@ export default function LissanApp({ configured }: { configured: boolean }) {
               </article>
               <article className="panel price-card premium">
                 <span className="chip violet">
-                  {t("قريباً", "COMING SOON", "BIENTÔT")}
+                  {t("محتوى عملي إضافي", "GO FURTHER", "ALLEZ PLUS LOIN")}
                 </span>
-                <h2>Lissan Premium</h2>
-                <div className="price">{t("قريباً", "Soon", "Bientôt")}</div>
+                <h2>Lissan Pro</h2>
+                <div className="price">
+                  {yearly ? PRO_PRICE.yearly : PRO_PRICE.monthly}{" "}
+                  <span>
+                    {t("درهم", "DH", "DH")} /{" "}
+                    {yearly
+                      ? t("سنة", "year", "an")
+                      : t("شهر", "month", "mois")}
+                  </span>
+                </div>
                 <p>
                   {yearly
                     ? t(
-                        "خطة سنوية قيد التحضير",
-                        "Annual plan in development",
-                        "Offre annuelle en préparation",
+                        "399 درهم تُدفع سنوياً · 33.25 درهم للشهر · وفر 189 درهم",
+                        "399 DH billed yearly · 33.25 DH/month · save 189 DH",
+                        "399 DH par an · 33,25 DH/mois · économisez 189 DH",
                       )
                     : t(
-                        "خطة شهرية قيد التحضير",
-                        "Monthly plan in development",
-                        "Offre mensuelle en préparation",
+                        "49 درهم شهرياً",
+                        "49 DH billed monthly",
+                        "49 DH par mois",
                       )}
                 </p>
                 <ul>
                   {[
                     t(
-                      "محتوى مستويات أعلى",
-                      "Higher-level content",
-                      "Contenu de niveaux supérieurs",
+                      "كل ميزات Free",
+                      "Everything in Free",
+                      "Toutes les fonctionnalités Free",
                     ),
                     t(
-                      "تقييم احترافي للنطق",
-                      "Professional pronunciation assessment",
-                      "Évaluation professionnelle de la prononciation",
+                      "9 دروس إضافية · 36 عبارة عملية",
+                      "9 extra lessons · 36 practical phrases",
+                      "9 leçons supplémentaires · 36 expressions pratiques",
                     ),
                     t(
-                      "مسارات متخصصة للعمل والسفر",
-                      "Specialised work & travel paths",
-                      "Parcours travail et voyage",
+                      "مقابلة العمل والتواصل المهني والفندق والمطار",
+                      "Job interviews, workplace, hotel & airport",
+                      "Entretiens, travail, hôtel et aéroport",
                     ),
-                  ].map((s) => (
-                    <li key={s}>
-                      <Sparkles size={18} />
-                      {s}
+                    t(
+                      "اختبارات باللغات الثلاث مع XP وتقدم محفوظ",
+                      "Three-language quizzes with XP & saved progress",
+                      "Quiz en trois langues, XP et progression sauvegardée",
+                    ),
+                    t(
+                      "بطاقات Pro بتكرار متباعد واستماع عادي وبطيء",
+                      "Pro spaced repetition cards & normal/slow audio",
+                      "Cartes Pro à répétition espacée, audio normal et lent",
+                    ),
+                  ].map((text) => (
+                    <li key={text}>
+                      <Check size={18} />
+                      {text}
                     </li>
                   ))}
                 </ul>
-                <button className="btn secondary" disabled>
-                  {t(
-                    "الاشتراك لم يفتح بعد",
-                    "Subscriptions are not open yet",
-                    "Abonnements bientôt disponibles",
-                  )}
-                </button>
+                {signed && p.plan === "pro" ? (
+                  <button
+                    className="btn primary"
+                    onClick={() => navigate("pro")}
+                  >
+                    {t(
+                      "افتح مساحة Pro",
+                      "Open Pro studio",
+                      "Ouvrir l’espace Pro",
+                    )}
+                  </button>
+                ) : (
+                  <>
+                    <button className="btn secondary" disabled>
+                      {t(
+                        "الدفع سيتاح قريباً",
+                        "Payments coming soon",
+                        "Paiement bientôt disponible",
+                      )}
+                    </button>
+                    <small>
+                      {t(
+                        "الاشتراك التجاري لم يفتح بعد. لا يتم خصم أي مبلغ.",
+                        "Paid subscriptions are not open yet. No charge is made.",
+                        "Les abonnements payants ne sont pas encore ouverts. Aucun débit.",
+                      )}
+                    </small>
+                  </>
+                )}
               </article>
             </div>
           </section>
+        )}
+        {view === "pro" && (
+          <ProStudio
+            onLanguage={(language) => setP({ ...p, language })}
+            language={p.language}
+            locale={p.locale}
+            completed={p.completed}
+            reviews={p.reviews}
+            onUpdate={refreshProgress}
+          />
         )}
       </main>
       <footer>
